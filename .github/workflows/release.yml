@@ -16,14 +16,14 @@ jobs:
       release_created: ${{ steps.rp.outputs.release_created }}
       tag_name: ${{ steps.rp.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: rp
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  # Builds the linux/windows binaries and attaches them to the release that
-  # release-please just created (only fires when a release was cut).
+  # Builds the release binaries (linux/macOS/windows) and attaches them to the
+  # release that release-please just created (only fires when a release was cut).
   goreleaser:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
@@ -31,15 +31,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
 
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@v7
         with:
           version: "~> v2"
           args: release --clean
