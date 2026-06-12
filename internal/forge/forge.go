@@ -12,18 +12,20 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/protoutil"
-	"github.com/rajmohanram/pdc/protos"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/rajmohanram/pdc/protos"
 )
 
 const annotationsProto = "google/api/annotations.proto"
@@ -398,12 +400,9 @@ func hasHTTP(m *descriptorpb.MethodDescriptorProto) bool {
 }
 
 func ensureDep(fdp *descriptorpb.FileDescriptorProto, dep string) {
-	for _, d := range fdp.Dependency {
-		if d == dep {
-			return
-		}
+	if !slices.Contains(fdp.Dependency, dep) {
+		fdp.Dependency = append(fdp.Dependency, dep)
 	}
-	fdp.Dependency = append(fdp.Dependency, dep)
 }
 
 func matchExclude(globs []string, key string) bool {
@@ -424,10 +423,8 @@ func hasBody(httpMethod string) bool {
 }
 
 func appendUnique(s []string, v string) []string {
-	for _, x := range s {
-		if x == v {
-			return s
-		}
+	if slices.Contains(s, v) {
+		return s
 	}
 	return append(s, v)
 }

@@ -14,16 +14,33 @@ the Envoy WASM authz filter — in one pure-Go binary, **no `protoc` required**.
 
 > Status: **working** — `generate`/`inspect`/`validate` implemented. See [DESIGN.md](DESIGN.md).
 
-## Usage
+## Install
 
 ```bash
-pdc generate \
-  -p ./proto \
-  -o uos.pb            # entry files auto-discovered under -p
+go install github.com/rajmohanram/pdc@latest   # -> $(go env GOPATH)/bin/pdc
+# or build from a checkout:
+make build                                      # -> ./bin/pdc
+```
 
-pdc inspect  -i uos.pb --missing-only
-pdc validate -i uos.pb --fail-on-missing
-pdc tree     -p ./proto --by-package    # services → methods → messages
+Prebuilt linux/windows binaries are attached to each GitHub release.
+
+## Usage
+
+Every command takes either `-p <proto dir>` (compile from source) or
+`-i <descriptor.pb>` (read a prebuilt set); `-h` on any subcommand lists its flags.
+
+```bash
+# generate a descriptor (auto-discovers all roots, annotates every method)
+pdc generate -p ./proto -o uos.pb
+
+# the service graph
+pdc tree -p ./proto --by-package        # group services under their package
+pdc tree -p ./proto --methods-only      # compact: services + methods only
+pdc tree -i uos.pb  --fields --depth 0  # expand message fields (0 = unlimited)
+
+# annotation status / validation
+pdc inspect  -p ./proto --missing-only  # methods the filter would deny
+pdc validate -i uos.pb  --fail-on-missing
 ```
 
 `pdc tree` renders the service graph. Add `--fields` to expand message fields
@@ -44,7 +61,7 @@ demo.Greeter
 
 ```bash
 make build      # ./bin/pdc for the host
-make cross      # ./dist/ for linux/{amd64,arm64} + windows/amd64
+make cross      # ./dist/ for linux/{amd64,arm64}, darwin/{amd64,arm64}, windows/amd64
 ```
 
 ## Bundled protos

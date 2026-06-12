@@ -5,8 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rajmohanram/pdc/internal/forge"
 	"github.com/spf13/cobra"
+
+	"github.com/rajmohanram/pdc/internal/forge"
 )
 
 func newTreeCmd() *cobra.Command {
