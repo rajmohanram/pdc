@@ -81,8 +81,8 @@ an annotation also get `google/api/annotations.proto` added to their
 - Idempotent: re-runs produce byte-identical output.
 
 ## Build / release
-Pure Go ⇒ `goreleaser` matrix `linux/{amd64,arm64}`, `windows/amd64`,
-`CGO_ENABLED=0`, version via `-ldflags`.
+Pure Go ⇒ `goreleaser` matrix `linux/{amd64,arm64}`, `darwin/{amd64,arm64}`,
+`windows/amd64`, `CGO_ENABLED=0`, version via `-ldflags`.
 
 ## Decisions (locked)
 1. Paths — **synthetic** `/<pkg>/<Service>/<Method>` (`.`→`/`), literal `pkg` when no package; **pre-existing overwritten**. WAF needs no real path.

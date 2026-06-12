@@ -61,7 +61,7 @@ demo.Greeter
 
 ```bash
 make build      # ./bin/pdc for the host
-make cross      # ./dist/ for linux/{amd64,arm64} + windows/amd64
+make cross      # ./dist/ for linux/{amd64,arm64}, darwin/{amd64,arm64}, windows/amd64
 ```
 
 ## Bundled protos

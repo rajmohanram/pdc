@@ -5,9 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rajmohanram/pdc/internal/forge"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+
+	"github.com/rajmohanram/pdc/internal/forge"
 )
 
 type generateOpts struct {
