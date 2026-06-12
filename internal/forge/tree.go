@@ -17,8 +17,10 @@ type Node struct {
 
 // TreeOptions configures the service tree.
 type TreeOptions struct {
-	Fields    bool // expand each request/response message's direct fields
-	ByPackage bool // group services under their package as the top root
+	Fields      bool // expand each request/response message's fields
+	Depth       int  // with Fields: levels of nested message fields (<=0 = unlimited)
+	ByPackage   bool // group services under their package as the top root
+	MethodsOnly bool // compact: services and methods only, no message nodes
 }
 
 // ServiceTreeFromSource compiles the protos and builds the service tree.
@@ -66,10 +68,12 @@ func serviceTree(set *descriptorpb.FileDescriptorSet, topt TreeOptions) []Node {
 		var ms []Node
 		for _, m := range fd.Method {
 			mn := Node{Label: methodLabel(m)}
-			mn.Children = append(mn.Children,
-				messageNode("request", strings.TrimPrefix(m.GetInputType(), "."), m.GetClientStreaming(), idx, topt),
-				messageNode("response", strings.TrimPrefix(m.GetOutputType(), "."), m.GetServerStreaming(), idx, topt),
-			)
+			if !topt.MethodsOnly {
+				mn.Children = append(mn.Children,
+					messageNode("request", strings.TrimPrefix(m.GetInputType(), "."), m.GetClientStreaming(), idx, topt),
+					messageNode("response", strings.TrimPrefix(m.GetOutputType(), "."), m.GetServerStreaming(), idx, topt),
+				)
+			}
 			ms = append(ms, mn)
 		}
 		return ms
@@ -125,21 +129,50 @@ func methodLabel(m *descriptorpb.MethodDescriptorProto) string {
 }
 
 func messageNode(role, msgFull string, stream bool, idx map[string]*descriptorpb.DescriptorProto, topt TreeOptions) Node {
+	display := msgFull
 	if stream {
-		msgFull = "stream " + msgFull
+		display = "stream " + msgFull
 	}
-	n := Node{Label: role + ": " + msgFull}
+	n := Node{Label: role + ": " + display}
 	if !topt.Fields {
 		return n
 	}
-	msg, ok := idx[strings.TrimPrefix(msgFull, "stream ")]
-	if !ok {
-		return n
+	levels := topt.Depth
+	if levels == 0 {
+		levels = -1 // 0 => unlimited
 	}
-	for _, f := range msg.Field {
-		n.Children = append(n.Children, Node{Label: fieldLabel(f)})
-	}
+	n.Children = fieldNodes(msgFull, idx, levels, map[string]bool{msgFull: true})
 	return n
+}
+
+// fieldNodes lists a message's fields, recursing into message-typed fields up to
+// `levels` deep (levels < 0 = unlimited). onPath guards against type cycles.
+func fieldNodes(msgFull string, idx map[string]*descriptorpb.DescriptorProto, levels int, onPath map[string]bool) []Node {
+	msg, ok := idx[msgFull]
+	if !ok {
+		return nil
+	}
+	var out []Node
+	for _, f := range msg.Field {
+		fn := Node{Label: fieldLabel(f)}
+		if f.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE && (levels < 0 || levels > 1) {
+			child := strings.TrimPrefix(f.GetTypeName(), ".")
+			if child != "" && !onPath[child] {
+				onPath[child] = true
+				fn.Children = fieldNodes(child, idx, nextLevel(levels), onPath)
+				delete(onPath, child)
+			}
+		}
+		out = append(out, fn)
+	}
+	return out
+}
+
+func nextLevel(levels int) int {
+	if levels < 0 {
+		return -1
+	}
+	return levels - 1
 }
 
 func fieldLabel(f *descriptorpb.FieldDescriptorProto) string {

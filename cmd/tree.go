@@ -11,11 +11,13 @@ import (
 
 func newTreeCmd() *cobra.Command {
 	var (
-		input      string
-		protoPaths []string
-		protoFiles []string
-		fields     bool
-		byPackage  bool
+		input       string
+		protoPaths  []string
+		protoFiles  []string
+		fields      bool
+		depth       int
+		byPackage   bool
+		methodsOnly bool
 	)
 	c := &cobra.Command{
 		Use:   "tree",
@@ -24,10 +26,21 @@ func newTreeCmd() *cobra.Command {
 types. Reads a prebuilt descriptor (--input) or compiles from source
 (--proto-path/--proto-files).
 
-  --fields       also list each message's fields
-  --by-package   group services under their package as the top root`,
+  --fields        also list each message's fields
+  --depth N       expand N levels of nested message fields (0 = unlimited; implies --fields)
+  --by-package    group services under their package as the top root
+  --methods-only  compact: services and methods only, no message nodes`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			topt := forge.TreeOptions{Fields: fields, ByPackage: byPackage}
+			// --depth implies --fields.
+			if cmd.Flags().Changed("depth") {
+				fields = true
+			}
+			topt := forge.TreeOptions{
+				Fields:      fields,
+				Depth:       depth,
+				ByPackage:   byPackage,
+				MethodsOnly: methodsOnly,
+			}
 			var (
 				nodes []forge.Node
 				err   error
@@ -63,7 +76,9 @@ types. Reads a prebuilt descriptor (--input) or compiles from source
 	f.StringSliceVarP(&protoPaths, "proto-path", "p", nil, "import root(s) (when compiling from source)")
 	f.StringSliceVarP(&protoFiles, "proto-files", "f", nil, "entry .proto file(s)")
 	f.BoolVar(&fields, "fields", false, "expand each message's fields")
+	f.IntVar(&depth, "depth", 1, "with --fields: levels of nested message fields to expand (0 = unlimited)")
 	f.BoolVar(&byPackage, "by-package", false, "group services under their package as the top root")
+	f.BoolVar(&methodsOnly, "methods-only", false, "compact: services and methods only, no message nodes")
 	return c
 }
 

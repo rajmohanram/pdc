@@ -38,14 +38,43 @@ func TestServiceTree(t *testing.T) {
 
 func TestServiceTree_Fields(t *testing.T) {
 	nodes, err := ServiceTreeFromSource(context.Background(),
-		Options{ProtoPaths: []string{"testdata"}}, TreeOptions{Fields: true})
+		Options{ProtoPaths: []string{"testdata"}}, TreeOptions{Fields: true, Depth: 1})
 	if err != nil {
 		t.Fatalf("ServiceTreeFromSource: %v", err)
 	}
-	// demo.Req has one field "id: string"
+	// demo.Req has "id: string" and "nested: demo.Nested"; at depth 1 the message
+	// field is a leaf (not expanded).
 	req := nodes[1].Children[0].Children[0] // demo.Greeter -> Hello -> request
-	if len(req.Children) != 1 || req.Children[0].Label != "id: string" {
-		t.Errorf("request fields=%v, want [id: string]", req.Children)
+	if len(req.Children) != 2 || req.Children[0].Label != "id: string" || req.Children[1].Label != "nested: demo.Nested" {
+		t.Fatalf("request fields=%v", req.Children)
+	}
+	if len(req.Children[1].Children) != 0 {
+		t.Errorf("depth 1 should not expand nested, got %v", req.Children[1].Children)
+	}
+}
+
+func TestServiceTree_Depth(t *testing.T) {
+	nodes, err := ServiceTreeFromSource(context.Background(),
+		Options{ProtoPaths: []string{"testdata"}}, TreeOptions{Fields: true, Depth: 2})
+	if err != nil {
+		t.Fatalf("ServiceTreeFromSource: %v", err)
+	}
+	req := nodes[1].Children[0].Children[0] // demo.Greeter -> Hello -> request
+	nested := req.Children[1]               // nested: demo.Nested
+	if len(nested.Children) != 1 || nested.Children[0].Label != "note: string" {
+		t.Errorf("depth 2 nested fields=%v, want [note: string]", nested.Children)
+	}
+}
+
+func TestServiceTree_MethodsOnly(t *testing.T) {
+	nodes, err := ServiceTreeFromSource(context.Background(),
+		Options{ProtoPaths: []string{"testdata"}}, TreeOptions{MethodsOnly: true})
+	if err != nil {
+		t.Fatalf("ServiceTreeFromSource: %v", err)
+	}
+	hello := nodes[1].Children[0] // demo.Greeter -> Hello
+	if hello.Label != "Hello" || len(hello.Children) != 0 {
+		t.Errorf("methods-only Hello should have no children, got %v", hello.Children)
 	}
 }
 

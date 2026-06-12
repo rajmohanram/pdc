@@ -6,6 +6,11 @@ import "google/api/annotations.proto";
 
 message Req {
   string id = 1;
+  Nested nested = 2;
+}
+
+message Nested {
+  string note = 1;
 }
 
 message Resp {

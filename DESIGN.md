@@ -27,7 +27,7 @@ A pure-Go CLI that compiles `.proto` files into a self-contained, validated
 | `generate` | compile [+ annotate] → descriptor `.pb` |
 | `inspect` | list services/methods + annotation status (`--missing-only`) |
 | `validate` | load a `.pb` and assert it's complete/authz-ready |
-| `tree` | print a services → methods → messages tree (`--fields`, `--by-package`) |
+| `tree` | services → methods → messages tree (`--fields`, `--depth`, `--by-package`, `--methods-only`) |
 | `version` | build info |
 
 ## Flags (`generate`)

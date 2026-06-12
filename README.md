@@ -26,7 +26,9 @@ pdc validate -i uos.pb --fail-on-missing
 pdc tree     -p ./proto --by-package    # services → methods → messages
 ```
 
-`pdc tree` renders the service graph (add `--fields` to expand message fields):
+`pdc tree` renders the service graph. Add `--fields` to expand message fields
+(`--depth N` for nested messages, `0` = unlimited), or `--methods-only` for a
+compact services+methods view:
 
 ```
 demo.Greeter
