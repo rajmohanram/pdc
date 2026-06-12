@@ -24,7 +24,7 @@ wasm filter would deny in fail-closed mode.`,
 			if input == "" && len(protoPaths) == 0 {
 				return errors.New("provide --input <descriptor.pb> or --proto-path")
 			}
-			// TODO(descforge): load descriptor and print the annotation report.
+			// TODO(pdc): load descriptor and print the annotation report.
 			return errors.New("inspect: not yet implemented — see DESIGN.md")
 		},
 	}

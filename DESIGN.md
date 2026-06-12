@@ -1,4 +1,4 @@
-# descforge — design
+# pdc — design
 
 A pure-Go CLI that compiles `.proto` files into a self-contained, validated
 `FileDescriptorSet` for the Envoy WASM authz filter, optionally injecting
@@ -44,12 +44,21 @@ A pure-Go CLI that compiles `.proto` files into a self-contained, validated
 | `--dry-run` | | `false` | report, write nothing |
 | `--prefer-local-wkt` | | `false` | use user `google/*` instead of bundled |
 
-## Annotation strategy
-Real REST paths (e.g. `/v1/uos/demo`) are **not derivable** from method names.
-So annotation resolution per method is: **`--mapping` override → synthetic
-`--path-template` → skip if `--exclude` matches**. Applied via **descriptor
-injection** (non-destructive; `.proto` source untouched). A `--write-source`
-mode (rewrite `.proto` via protoprint) is a possible later addition.
+## Annotation strategy (decided)
+The WAF does not need a real REST path — only that a consistent path **exists**.
+So for each method missing `google.api.http`, inject a **synthetic** one:
+
+- HTTP method: `--http-method` (default `post`; `body: "*"` for non-GET).
+- Path: the fully-qualified `<pkg>.<Service>.<Method>` with **`.` replaced by
+  `/`**, i.e. `post: "/<pkg>/<Service>/<Method>"`. The `<pkg>` segment is
+  **omitted when the service has no package** → `"/<Service>/<Method>"`
+  (`<Service>/<Method>` is always available). Unique by construction.
+- Override per method via `--mapping`; skip methods matching `--exclude`.
+
+**Apply mode: descriptor injection only** — the option is set on `MethodOptions`
+in memory after compile; the `.proto` source is never modified. (Files that gain
+an annotation also get `google/api/annotations.proto` added to their
+`dependency` list so the descriptor stays self-consistent.)
 
 ## generate pipeline
 1. Resolve inputs (discover roots if `-f` omitted; drop bundled `google/*` from user roots).
@@ -64,8 +73,9 @@ mode (rewrite `.proto` via protoprint) is a possible later addition.
 ## Edge cases
 - Mixed proto2/proto3 (`descriptor.proto` is proto2).
 - Streaming RPCs — annotate (path only); `GET` ⇒ omit body.
-- Pre-annotated methods never overwritten (unless `--overwrite`).
-- Path collisions — synthetic gRPC path is unique; custom template collision ⇒ error.
+- Pre-annotated methods never overwritten.
+- Path collisions — synthetic `/<pkg>/<Service>/<Method>` is unique by construction; a `--mapping` collision ⇒ error.
+- Package with multiple segments (`a.b`) ⇒ `/a/b/<Service>/<Method>` (all dots become slashes).
 - Duplicate filenames across `-p` roots ⇒ ambiguity error.
 - Orphan root files not imported by anything (e.g. `telemetry.proto`) — covered by auto-discovery.
 - Idempotent: re-runs produce byte-identical output.
@@ -74,6 +84,7 @@ mode (rewrite `.proto` via protoprint) is a possible later addition.
 Pure Go ⇒ `goreleaser` matrix `linux/{amd64,arm64}`, `windows/amd64`,
 `CGO_ENABLED=0`, version via `-ldflags`.
 
-## Open decisions
-1. WAF path semantics — synthetic gRPC paths enough, or real paths needed (mapping core)?
-2. Apply mode — descriptor injection only, or also `--write-source`?
+## Decisions (locked)
+1. Paths — **synthetic**, `/<pkg>/<Service>/<Method>` with `.`→`/`, package optional. WAF needs no real path.
+2. Apply mode — **descriptor injection only**; source untouched.
+3. Tool name — **`pdc`**.

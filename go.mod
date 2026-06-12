@@ -1,4 +1,4 @@
-module github.com/rajmohanram/descforge
+module github.com/rajmohanram/pdc
 
 go 1.26.3
 

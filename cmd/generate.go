@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// generateOpts holds the flags for `descforge generate`.
+// generateOpts holds the flags for `pdc generate`.
 type generateOpts struct {
 	protoPaths     []string
 	protoFiles     []string
@@ -39,7 +39,7 @@ one injected: a per-method override from --mapping, else a synthetic path from
 			if len(o.protoPaths) == 0 {
 				return errors.New("at least one --proto-path/-p is required")
 			}
-			// TODO(descforge): implement the generate pipeline (see DESIGN.md):
+			// TODO(pdc): implement the generate pipeline (see DESIGN.md):
 			// resolve -> compile (protocompile) -> annotate -> re-validate ->
 			// assemble FileDescriptorSet -> deterministic marshal -> self-check.
 			return errors.New("generate: not yet implemented — see DESIGN.md")
@@ -52,7 +52,7 @@ one injected: a per-method override from --mapping, else a synthetic path from
 	f.StringVarP(&o.output, "output", "o", "", "descriptor output file (FileDescriptorSet)")
 	f.BoolVar(&o.annotate, "annotate", true, "auto-add google.api.http to methods missing it")
 	f.StringVar(&o.httpMethod, "http-method", "post", "HTTP method for synthetic annotations (post|get|put|delete|patch)")
-	f.StringVar(&o.pathTemplate, "path-template", "/{pkg}.{service}/{method}", "synthetic path template; tokens: {pkg} {service} {method}")
+	f.StringVar(&o.pathTemplate, "path-template", "/{pkg}/{service}/{method}", "synthetic path; '.'->'/' applied, {pkg} segment omitted when the service has no package")
 	f.StringVar(&o.mapping, "mapping", "", "YAML/JSON file of per-method annotation overrides")
 	f.StringSliceVar(&o.exclude, "exclude", nil, "method glob(s) to leave unannotated (e.g. internal-only RPCs)")
 	f.BoolVar(&o.failOnMissing, "fail-on-missing", false, "exit non-zero if any non-excluded method ends up unannotated")

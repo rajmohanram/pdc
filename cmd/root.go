@@ -8,9 +8,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "descforge",
+	Use:   "pdc",
 	Short: "Annotate gRPC methods and forge validated protobuf descriptor sets",
-	Long: `descforge compiles .proto files into a self-contained, validated
+	Long: `pdc compiles .proto files into a self-contained, validated
 FileDescriptorSet for the Envoy WASM authz filter.
 
 It bundles the well-known and google.api protos, always includes imports and

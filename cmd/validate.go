@@ -21,7 +21,7 @@ self-contained, and (optionally) every method annotated.`,
 			if input == "" {
 				return errors.New("--input/-i <descriptor.pb> is required")
 			}
-			// TODO(descforge): load, re-link, and assert invariants.
+			// TODO(pdc): load, re-link, and assert invariants.
 			return errors.New("validate: not yet implemented — see DESIGN.md")
 		},
 	}
