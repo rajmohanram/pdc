@@ -23,6 +23,19 @@ pdc generate \
 
 pdc inspect  -i uos.pb --missing-only
 pdc validate -i uos.pb --fail-on-missing
+pdc tree     -p ./proto --by-package    # services → methods → messages
+```
+
+`pdc tree` renders the service graph (add `--fields` to expand message fields):
+
+```
+demo.Greeter
+├─ Hello
+│  ├─ request: demo.Req
+│  └─ response: demo.Resp
+└─ Health
+   ├─ request: demo.Req
+   └─ response: demo.Resp
 ```
 
 ## Build

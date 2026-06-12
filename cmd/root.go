@@ -33,6 +33,7 @@ func init() {
 		newGenerateCmd(),
 		newInspectCmd(),
 		newValidateCmd(),
+		newTreeCmd(),
 		newVersionCmd(),
 	)
 }
