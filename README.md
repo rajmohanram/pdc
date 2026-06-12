@@ -8,8 +8,8 @@ the Envoy WASM authz filter — in one pure-Go binary, **no `protoc` required**.
 - compiles `.proto` files with **imports + source info always included**,
 - **bundles** the well-known (`google/protobuf/*`) and `google/api/*` protos, so
   your protos don't need to vendor them,
-- **injects `google.api.http`** annotations on every method that lacks one
-  (which the wasm/authz filter would otherwise deny in fail-closed mode),
+- sets a **standard `google.api.http`** annotation on every method (overwriting
+  any existing one) so the wasm/authz filter inspects every gRPC method,
 - emits a deterministic, self-validated descriptor.
 
 > Status: **working** — `generate`/`inspect`/`validate` implemented. See [DESIGN.md](DESIGN.md).

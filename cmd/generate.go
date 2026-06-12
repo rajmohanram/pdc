@@ -30,8 +30,9 @@ func newGenerateCmd() *cobra.Command {
 		Long: `Compile the given .proto files into a FileDescriptorSet, bundling the
 well-known and google.api protos, always including imports and source info.
 
-Every method missing a google.api.http option gets one injected: a per-method
-override from --mapping, else a synthetic "/<pkg>/<Service>/<Method>" path,
+Every method gets a standard google.api.http annotation, overwriting any
+existing one: a per-method override from --mapping, else a synthetic
+"/<pkg>/<Service>/<Method>" path (literal "pkg" when there is no package),
 unless the method matches an --exclude glob.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if o.output == "" {
@@ -103,6 +104,6 @@ func loadMapping(p string) (map[string]forge.Override, error) {
 }
 
 func renderReport(r *forge.Report) string {
-	return fmt.Sprintf("files=%d services=%d methods=%d annotated=%d (auto=%d, existing=%d) excluded=%d missing=%d",
-		r.Files, r.Services, r.Methods, r.Annotated, r.AutoAdded, r.PreExisting, r.Excluded, len(r.Missing))
+	return fmt.Sprintf("files=%d services=%d methods=%d annotated=%d (added=%d, overwritten=%d) excluded=%d missing=%d",
+		r.Files, r.Services, r.Methods, r.Annotated, r.Added, r.Overwritten, r.Excluded, len(r.Missing))
 }

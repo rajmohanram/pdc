@@ -1,8 +1,8 @@
 # pdc — design
 
 A pure-Go CLI that compiles `.proto` files into a self-contained, validated
-`FileDescriptorSet` for the Envoy WASM authz filter, optionally injecting
-`google.api.http` annotations on methods that lack them.
+`FileDescriptorSet` for the Envoy WASM authz filter, setting a standard
+`google.api.http` annotation on every method.
 
 ## Goals
 - One static binary per platform (Linux, Windows) — **no `protoc` dependency**.
@@ -35,10 +35,8 @@ A pure-Go CLI that compiles `.proto` files into a self-contained, validated
 | `--proto-path` | `-p` | — | import root(s), repeatable |
 | `--proto-files` | `-f` | (auto) | entry files; **if omitted, discover all `*.proto` under `-p`** |
 | `--output` | `-o` | — | descriptor output path |
-| `--annotate` | | `true` | inject missing http annotations |
-| `--http-method` | | `post` | method for synthetic annotations (GET ⇒ no body) |
-| `--path-template` | | `/{pkg}.{service}/{method}` | synthetic path; collision-free by construction |
-| `--mapping` | | — | YAML/JSON per-method overrides (real paths) |
+| `--http-method` | | `post` | method for the injected annotations (GET ⇒ no body) |
+| `--mapping` | | — | YAML/JSON per-method overrides (custom paths) |
 | `--exclude` | | — | method glob(s) to leave unannotated (internal-only) |
 | `--fail-on-missing` | | `false` | CI gate: non-zero if any non-excluded method unannotated |
 | `--dry-run` | | `false` | report, write nothing |
@@ -46,14 +44,15 @@ A pure-Go CLI that compiles `.proto` files into a self-contained, validated
 
 ## Annotation strategy (decided)
 The WAF does not need a real REST path — only that a consistent path **exists**.
-So for each method missing `google.api.http`, inject a **synthetic** one:
+So **every** method is given the **standard** annotation, **overwriting** any
+pre-existing `google.api.http`:
 
 - HTTP method: `--http-method` (default `post`; `body: "*"` for non-GET).
 - Path: the fully-qualified `<pkg>.<Service>.<Method>` with **`.` replaced by
-  `/`**, i.e. `post: "/<pkg>/<Service>/<Method>"`. The `<pkg>` segment is
-  **omitted when the service has no package** → `"/<Service>/<Method>"`
-  (`<Service>/<Method>` is always available). Unique by construction.
-- Override per method via `--mapping`; skip methods matching `--exclude`.
+  `/`**, i.e. `post: "/<pkg>/<Service>/<Method>"`. When the service has **no
+  package**, the segment is the literal `pkg` → `"/pkg/<Service>/<Method>"`.
+  Unique by construction.
+- Override per method via `--mapping`; `--exclude` leaves a method untouched.
 
 **Apply mode: descriptor injection only** — the option is set on `MethodOptions`
 in memory after compile; the `.proto` source is never modified. (Files that gain
@@ -63,7 +62,7 @@ an annotation also get `google/api/annotations.proto` added to their
 ## generate pipeline
 1. Resolve inputs (discover roots if `-f` omitted; drop bundled `google/*` from user roots).
 2. Compile (protocompile, `SourceInfoMode=Standard`, composite resolver).
-3. Inject `google.api.http` on methods missing it.
+3. Set the standard `google.api.http` on every method (overwrite), skipping `--exclude`.
 4. Re-link / validate the mutated descriptors.
 5. Assemble `FileDescriptorSet` = all transitive files (with source info).
 6. Deterministic marshal → reproducible bytes.
@@ -73,7 +72,7 @@ an annotation also get `google/api/annotations.proto` added to their
 ## Edge cases
 - Mixed proto2/proto3 (`descriptor.proto` is proto2).
 - Streaming RPCs — annotate (path only); `GET` ⇒ omit body.
-- Pre-annotated methods never overwritten.
+- Pre-existing annotations are overwritten to the standard path (--exclude leaves a method untouched).
 - Path collisions — synthetic `/<pkg>/<Service>/<Method>` is unique by construction; a `--mapping` collision ⇒ error.
 - Package with multiple segments (`a.b`) ⇒ `/a/b/<Service>/<Method>` (all dots become slashes).
 - Duplicate filenames across `-p` roots ⇒ ambiguity error.
@@ -85,6 +84,6 @@ Pure Go ⇒ `goreleaser` matrix `linux/{amd64,arm64}`, `windows/amd64`,
 `CGO_ENABLED=0`, version via `-ldflags`.
 
 ## Decisions (locked)
-1. Paths — **synthetic**, `/<pkg>/<Service>/<Method>` with `.`→`/`, package optional. WAF needs no real path.
+1. Paths — **synthetic** `/<pkg>/<Service>/<Method>` (`.`→`/`), literal `pkg` when no package; **pre-existing overwritten**. WAF needs no real path.
 2. Apply mode — **descriptor injection only**; source untouched.
 3. Tool name — **`pdc`**.

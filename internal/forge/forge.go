@@ -53,15 +53,16 @@ type Report struct {
 	Files       int
 	Services    int
 	Methods     int
-	Annotated   int
-	AutoAdded   int
-	PreExisting int
+	Annotated   int // methods set to the standard annotation (non-excluded)
+	Added       int // of Annotated: previously had no annotation
+	Overwritten int // of Annotated: previously had one, now replaced
 	Excluded    int
-	Missing     []string // service-method keys left unannotated (excludes not counted)
+	Missing     []string // methods without an annotation (read/inspect paths)
 }
 
-// Generate compiles, injects http annotations on every method that lacks one,
-// and returns the marshaled FileDescriptorSet plus a report.
+// Generate compiles, sets the standard http annotation on every method
+// (overwriting any existing one), and returns the marshaled FileDescriptorSet
+// plus a report.
 func Generate(ctx context.Context, opts Options) ([]byte, *Report, error) {
 	opts.annotate = true
 	fdps, rep, err := compileAndAnnotate(ctx, opts)
@@ -250,24 +251,36 @@ func annotate(fdps []*descriptorpb.FileDescriptorProto, opts Options) *Report {
 			for _, m := range svc.Method {
 				rep.Methods++
 				key := svcFull + "/" + m.GetName()
-				if hasHTTP(m) {
-					rep.PreExisting++
-					rep.Annotated++
+				had := hasHTTP(m)
+
+				// inspect (read-only): report current state, change nothing.
+				if !opts.annotate {
+					switch {
+					case had:
+						rep.Annotated++
+					case matchExclude(opts.Exclude, key):
+						rep.Excluded++
+					default:
+						rep.Missing = append(rep.Missing, key)
+					}
 					continue
 				}
+
+				// generate: standardize every non-excluded method, overwriting
+				// any pre-existing annotation.
 				if matchExclude(opts.Exclude, key) {
 					rep.Excluded++
-					continue
-				}
-				if !opts.annotate {
-					rep.Missing = append(rep.Missing, key)
 					continue
 				}
 				method, p, body := resolveAnno(opts, pkg, svc.GetName(), m.GetName(), key)
 				setHTTP(m, method, p, body)
 				gained = true
-				rep.AutoAdded++
 				rep.Annotated++
+				if had {
+					rep.Overwritten++
+				} else {
+					rep.Added++
+				}
 			}
 		}
 		if gained {
@@ -279,8 +292,7 @@ func annotate(fdps []*descriptorpb.FileDescriptorProto, opts Options) *Report {
 }
 
 // resolveAnno returns the (httpMethod, path, body) for a method: a --mapping
-// override if present, else the synthetic /<pkg>/<Service>/<Method> path with
-// '.' replaced by '/' and the pkg segment omitted when there is no package.
+// override if present, else the synthetic standard path.
 func resolveAnno(opts Options, pkg, svc, method, key string) (string, string, string) {
 	if ov, ok := opts.Mapping[key]; ok {
 		hm := ov.Method
@@ -293,11 +305,6 @@ func resolveAnno(opts Options, pkg, svc, method, key string) (string, string, st
 		}
 		return hm, ov.Path, body
 	}
-	fq := svc + "." + method
-	if pkg != "" {
-		fq = pkg + "." + fq
-	}
-	p := "/" + strings.ReplaceAll(fq, ".", "/")
 	hm := opts.HTTPMethod
 	if hm == "" {
 		hm = "post"
@@ -306,7 +313,17 @@ func resolveAnno(opts Options, pkg, svc, method, key string) (string, string, st
 	if hasBody(hm) {
 		body = "*"
 	}
-	return hm, p, body
+	return hm, syntheticPath(pkg, svc, method), body
+}
+
+// syntheticPath builds /<pkg>/<Service>/<Method> with '.' replaced by '/'. A
+// missing package becomes the literal segment "pkg" (so the path is always
+// /pkg/<Service>/<Method>).
+func syntheticPath(pkg, svc, method string) string {
+	if pkg == "" {
+		pkg = "pkg"
+	}
+	return "/" + strings.ReplaceAll(pkg+"."+svc+"."+method, ".", "/")
 }
 
 func setHTTP(m *descriptorpb.MethodDescriptorProto, httpMethod, p, body string) {
@@ -363,7 +380,6 @@ func reportSet(set *descriptorpb.FileDescriptorSet, exclude []string) *Report {
 				key := svcFull + "/" + m.GetName()
 				switch {
 				case hasHTTP(m):
-					rep.PreExisting++
 					rep.Annotated++
 				case matchExclude(exclude, key):
 					rep.Excluded++
