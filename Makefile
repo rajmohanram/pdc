@@ -8,6 +8,10 @@ LDFLAGS := -s -w \
 	-X $(PKG)/cmd.commit=$(COMMIT) \
 	-X $(PKG)/cmd.date=$(DATE)
 
+# Pinned googleapis ref for the bundled google/api protos (see protos/PROTO_VERSION).
+GAPIS_REF ?= 1526e545e9d26f23b9c5d0f04af17297def8d045
+GAPIS_RAW := https://raw.githubusercontent.com/googleapis/googleapis/$(GAPIS_REF)/google/api
+
 .PHONY: build cross test tidy vet vendor-protos clean
 
 build:
@@ -28,7 +32,13 @@ tidy:
 	go mod tidy
 
 vendor-protos:
-	@echo "TODO: fetch pinned google/protobuf + google/api .proto into protos/ (record version)"
+	@mkdir -p protos/google/api
+	@for f in http.proto annotations.proto; do \
+		echo "fetching google/api/$$f @ $(GAPIS_REF)"; \
+		curl -fsSL "$(GAPIS_RAW)/$$f" -o "protos/google/api/$$f"; \
+	done
+	@echo "googleapis ref: $(GAPIS_REF)" > protos/PROTO_VERSION
+	@echo "wrote protos/PROTO_VERSION"
 
 clean:
 	rm -rf bin dist

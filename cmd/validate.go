@@ -30,12 +30,12 @@ resolve, types self-contained), and report annotation coverage. With
 			}
 			rep, err := forge.Validate(pb, exclude, failOnMissing)
 			if rep != nil {
-				fmt.Fprintln(cmd.OutOrStdout(), renderReport(rep))
+				outln(cmd, renderReport(rep))
 			}
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), "OK: descriptor links and is complete")
+			outln(cmd, "OK: descriptor links and is complete")
 			return nil
 		},
 	}

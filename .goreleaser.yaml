@@ -1,0 +1,41 @@
+version: 2
+
+project_name: pdc
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: pdc
+    main: .
+    binary: pdc
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X github.com/rajmohanram/pdc/cmd.version={{ .Version }}
+      - -X github.com/rajmohanram/pdc/cmd.commit={{ .ShortCommit }}
+      - -X github.com/rajmohanram/pdc/cmd.date={{ .Date }}
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true # release-please owns the changelog
+
+release:
+  draft: false

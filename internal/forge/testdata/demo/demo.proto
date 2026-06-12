@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package demo;
+
+import "google/api/annotations.proto";
+
+message Req {
+  string id = 1;
+}
+
+message Resp {
+  string ok = 1;
+}
+
+service Greeter {
+  // Unannotated — pdc should inject a synthetic annotation.
+  rpc Hello(Req) returns (Resp);
+
+  // Pre-annotated — pdc must preserve this verbatim.
+  rpc Health(Req) returns (Resp) {
+    option (google.api.http) = { get: "/healthz" };
+  }
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+// No package, and not imported by any other file — a standalone root that
+// auto-discovery must still pick up (the telemetry.proto case).
+
+message Ping {
+  string p = 1;
+}
+
+service Bare {
+  rpc Beat(Ping) returns (Ping);
+}

@@ -34,5 +34,15 @@ make cross      # ./dist/ for linux/{amd64,arm64} + windows/amd64
 
 ## Bundled protos
 
-The well-known and `google/api` protos live under `protos/` and are embedded at
-build time. Refresh/pin them with `make vendor-protos` (version recorded there).
+The `google/api` protos live under `protos/` and are embedded at build time;
+the well-known `google/protobuf` types come from the protobuf runtime. Refresh
+the bundled `google/api` protos with `make vendor-protos` — they are pinned to a
+googleapis commit recorded in `protos/PROTO_VERSION`.
+
+## CI / Release
+
+- **CI** (`.github/workflows/ci.yml`) on every PR to `main`: gofmt, `go vet`,
+  golangci-lint, `go test -race`, build.
+- **Release** (`.github/workflows/release.yml`) on merge to `main`:
+  release-please maintains a release PR from Conventional Commits; merging it
+  tags the version and goreleaser publishes the linux/windows binaries.

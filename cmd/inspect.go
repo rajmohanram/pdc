@@ -46,10 +46,10 @@ annotation. Reads a prebuilt descriptor (--input) or compiles from source
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), renderReport(rep))
+			outln(cmd, renderReport(rep))
 			if missingOnly {
 				for _, m := range rep.Missing {
-					fmt.Fprintln(cmd.OutOrStdout(), "  MISSING", m)
+					outln(cmd, "  MISSING", m)
 				}
 			}
 			return nil

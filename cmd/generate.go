@@ -59,9 +59,9 @@ unless the method matches an --exclude glob.`,
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), renderReport(rep))
+			outln(cmd, renderReport(rep))
 			if o.dryRun {
-				fmt.Fprintf(cmd.OutOrStdout(), "dry-run: %d bytes not written\n", len(out))
+				outf(cmd, "dry-run: %d bytes not written\n", len(out))
 				return nil
 			}
 			if dir := filepath.Dir(o.output); dir != "" && dir != "." {
@@ -72,7 +72,7 @@ unless the method matches an --exclude glob.`,
 			if err := os.WriteFile(o.output, out, 0o644); err != nil {
 				return fmt.Errorf("write %s: %w", o.output, err)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "wrote %s (%d bytes)\n", o.output, len(out))
+			outf(cmd, "wrote %s (%d bytes)\n", o.output, len(out))
 			return nil
 		},
 	}
