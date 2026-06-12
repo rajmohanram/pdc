@@ -1,0 +1,10 @@
+# Build output
+/bin/
+/dist/
+
+# Go test/coverage
+*.out
+*.test
+
+# OS / editor cruft
+.DS_Store
