@@ -14,8 +14,8 @@ var rootCmd = &cobra.Command{
 FileDescriptorSet for the Envoy WASM authz filter.
 
 It bundles the well-known and google.api protos, always includes imports and
-source info, and can inject google.api.http annotations on methods that lack
-them — producing a descriptor that the wasm/authz pipeline can fully inspect.`,
+source info, and injects google.api.http annotations on methods that lack them
+— producing a descriptor that the wasm/authz pipeline can fully inspect.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
